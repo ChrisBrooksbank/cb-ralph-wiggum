@@ -1,16 +1,16 @@
 ---
 name: cb-ralph-wiggum
 author: ChrisBrooksbank
-description: Scaffold Ralph Wiggum autonomous AI development - JTBD specs, prompts, and bash loop for fresh-context iterations
+description: Scaffold Ralph Wiggum autonomous AI development - JTBD specs, prompts, and loop scripts for fresh-context iterations
 ---
 
 # Ralph Wiggum Setup
 
-This skill scaffolds Geoffrey Huntley's Ralph Wiggum methodology - an autonomous AI development loop that uses **fresh context per iteration** via a bash loop.
+This skill scaffolds Geoffrey Huntley's Ralph Wiggum methodology - an autonomous AI development loop that uses **fresh context per iteration**.
 
 ## What is Ralph Wiggum?
 
-Ralph Wiggum is a technique where a bash loop repeatedly feeds prompts to Claude, with each iteration getting fresh context. Progress is stored in files and git history, not in the LLM context window. This enables autonomous development at ~$10/hour compute cost.
+Ralph Wiggum is a technique where a loop repeatedly feeds prompts to Claude, with each iteration getting fresh context. Progress is stored in files and git history, not in the LLM context window. This enables autonomous development at ~$10/hour compute cost.
 
 **Key principles:**
 - Fresh context each iteration (not accumulated like the Anthropic plugin)
@@ -53,7 +53,7 @@ Use AskUserQuestion to gather requirements:
 
 ## Files to Generate
 
-### 1. loop.sh
+### 1. loop.sh (Bash - macOS/Linux/WSL/Git Bash)
 
 Create this file with executable permissions:
 
@@ -135,7 +135,105 @@ echo "Ralph loop finished after $ITERATION iterations."
 
 After creating, make executable: `chmod +x loop.sh`
 
-### 2. PROMPT_plan.md
+### 2. loop.ps1 (PowerShell - Windows)
+
+Create this file for Windows users:
+
+```powershell
+# Ralph Wiggum Loop - Fresh context per iteration (PowerShell version)
+# Usage: .\loop.ps1 [-Mode plan|build] [-MaxIterations N]
+#
+# Examples:
+#   .\loop.ps1                       # Build mode, unlimited iterations
+#   .\loop.ps1 -Mode plan            # Planning mode, unlimited iterations
+#   .\loop.ps1 -Mode plan -MaxIterations 5
+#   .\loop.ps1 -Mode build -MaxIterations 20
+
+param(
+    [ValidateSet("plan", "build")]
+    [string]$Mode = "build",
+
+    [int]$MaxIterations = 0  # 0 means unlimited
+)
+
+$ErrorActionPreference = "Stop"
+
+# Select prompt file
+$PromptFile = if ($Mode -eq "plan") { "PROMPT_plan.md" } else { "PROMPT_build.md" }
+
+if (-not (Test-Path $PromptFile)) {
+    Write-Error "Error: $PromptFile not found"
+    exit 1
+}
+
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "Ralph Wiggum Loop" -ForegroundColor Cyan
+Write-Host "Mode: $Mode" -ForegroundColor Cyan
+Write-Host "Prompt: $PromptFile" -ForegroundColor Cyan
+if ($MaxIterations -gt 0) {
+    Write-Host "Max iterations: $MaxIterations" -ForegroundColor Cyan
+}
+Write-Host "==========================================" -ForegroundColor Cyan
+
+$Iteration = 0
+
+while ($true) {
+    if ($MaxIterations -gt 0 -and $Iteration -ge $MaxIterations) {
+        Write-Host ""
+        Write-Host "Reached max iterations ($MaxIterations). Stopping." -ForegroundColor Yellow
+        break
+    }
+
+    $Iteration++
+    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+
+    Write-Host ""
+    Write-Host "==========================================" -ForegroundColor Green
+    Write-Host "Iteration $Iteration (Mode: $Mode)" -ForegroundColor Green
+    Write-Host $Timestamp -ForegroundColor Green
+    Write-Host "==========================================" -ForegroundColor Green
+
+    # Fresh Claude session each iteration - context resets!
+    Get-Content $PromptFile -Raw | claude -p --dangerously-skip-permissions --model sonnet
+
+    # Check Claude exit code
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Claude exited with error code $LASTEXITCODE" -ForegroundColor Red
+        # Continue anyway - let the loop try again
+    }
+
+    # Auto-commit progress after each iteration
+    git add -A
+
+    $StagedChanges = git diff --staged --quiet 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        # There are staged changes
+        $CommitMessage = @"
+Ralph iteration $Iteration ($Mode mode)
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+"@
+        git commit -m $CommitMessage
+        Write-Host "Changes committed." -ForegroundColor Green
+    }
+    else {
+        Write-Host "No changes to commit." -ForegroundColor Yellow
+    }
+
+    Write-Host "Iteration $Iteration complete."
+    Start-Sleep -Seconds 2
+}
+
+Write-Host ""
+Write-Host "Ralph loop finished after $Iteration iterations." -ForegroundColor Cyan
+```
+
+**Note for Windows users:** If you get an execution policy error, run:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+
+### 3. PROMPT_plan.md
 
 ```markdown
 # PLANNING MODE
@@ -194,7 +292,7 @@ After updating the plan, your work is done. Exit cleanly. The loop will restart 
 - **DO keep tasks small** - one task = one iteration in build mode
 ```
 
-### 3. PROMPT_build.md
+### 4. PROMPT_build.md
 
 ```markdown
 # BUILD MODE
@@ -253,7 +351,7 @@ The loop will restart with fresh context for the next task.
 - **DO update IMPLEMENTATION_PLAN.md** before exiting
 ```
 
-### 4. AGENTS.md
+### 5. AGENTS.md
 
 Generate this by extracting commands from existing CLAUDE.md, or ask the user. Template:
 
@@ -289,7 +387,7 @@ npm run check          # Run ALL checks (typecheck, lint, format, tests)
 - [Add learnings from iterations here]
 ```
 
-### 5. IMPLEMENTATION_PLAN.md
+### 6. IMPLEMENTATION_PLAN.md
 
 Start with an empty or minimal template:
 
@@ -316,7 +414,7 @@ Start with an empty or minimal template:
 <!-- Architectural decisions and learnings -->
 ```
 
-### 6. specs/ Directory
+### 7. specs/ Directory
 
 Create one markdown file per JTBD topic. Template:
 
@@ -352,7 +450,7 @@ Create one markdown file per JTBD topic. Template:
 
 After generating all files, provide these instructions to the user:
 
-### Quick Start
+### Quick Start (Bash - macOS/Linux/WSL/Git Bash)
 
 ```bash
 # Make loop executable
@@ -367,6 +465,18 @@ chmod +x loop.sh
 ./loop.sh build 10
 ```
 
+### Quick Start (PowerShell - Windows)
+
+```powershell
+# Run planning mode (generates tasks from specs)
+.\loop.ps1 -Mode plan -MaxIterations 3
+
+# Review the generated IMPLEMENTATION_PLAN.md
+
+# Run build mode (implements tasks one by one)
+.\loop.ps1 -Mode build -MaxIterations 10
+```
+
 ### Safety Notes
 
 - `--dangerously-skip-permissions` bypasses Claude's permission system
@@ -378,7 +488,8 @@ chmod +x loop.sh
 
 If the plan becomes stale or Ralph goes in circles:
 ```bash
-./loop.sh plan 1
+./loop.sh plan 1                              # Bash
+.\loop.ps1 -Mode plan -MaxIterations 1        # PowerShell
 ```
 This regenerates the plan with fresh analysis.
 

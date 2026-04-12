@@ -1,0 +1,20 @@
+# Normalize line endings for all text files
+* text=auto eol=lf
+
+# Shell scripts must use LF
+*.sh text eol=lf
+
+# PowerShell 7 works fine with LF
+*.ps1 text eol=lf
+
+# Markdown
+*.md text eol=lf
+
+# Binary files — no diffing or conversion
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.tar.gz binary

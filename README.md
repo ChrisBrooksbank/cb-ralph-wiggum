@@ -4,7 +4,7 @@ A Claude Code slash command that scaffolds Geoffrey Huntley's **Ralph Wiggum** m
 
 ## What is Ralph Wiggum?
 
-Ralph Wiggum is a loop technique that feeds prompts to Claude repeatedly, with each iteration getting **fresh context**. Progress is stored in files and git history, not in the LLM context window.
+Ralph Wiggum is a loop technique that feeds prompts to Claude repeatedly, with each iteration getting **fresh context**. Progress is stored in files and git history, not in the LLM context window. Loops are provided for both **PowerShell 7** (`loop.ps1`) and **Bash** (`loop.sh`).
 
 **Key principles:**
 - **Fresh context each iteration** - Unlike plugins that accumulate context, true Ralph spawns new Claude sessions
@@ -42,15 +42,28 @@ This will:
 1. Interview you about what you want to build (Jobs To Be Done)
 2. Detect existing project configuration (CLAUDE.md)
 3. Generate all Ralph Wiggum files:
+   - `loop.ps1` - PowerShell 7 loop orchestrator (Windows)
    - `loop.sh` - Bash loop orchestrator (macOS/Linux/WSL)
-   - `loop.ps1` - PowerShell loop orchestrator (Windows)
    - `PROMPT_plan.md` - Planning mode instructions
-   - `PROMPT_build.md` - Build mode instructions
+   - `PROMPT_build.md` - Build mode instructions (includes visual verification step)
    - `AGENTS.md` - Operational guide
    - `IMPLEMENTATION_PLAN.md` - Task list
    - `specs/*.md` - JTBD specifications
+   - `.gitignore` / `.gitattributes` - if not already present
 
 ### Running the Loop
+
+#### PowerShell 7 (Windows — recommended)
+
+```powershell
+# Run planning mode - analyzes specs, generates tasks
+.\loop.ps1 plan 3
+
+# Review IMPLEMENTATION_PLAN.md
+
+# Run build mode - implements one task per iteration
+.\loop.ps1 build 10
+```
 
 #### Bash (macOS/Linux/WSL/Git Bash)
 
@@ -58,69 +71,58 @@ This will:
 # Make executable (first time only)
 chmod +x loop.sh
 
-# Run planning mode - analyzes specs, generates tasks
+# Run planning mode
 ./loop.sh plan 3
 
-# Review IMPLEMENTATION_PLAN.md
-
-# Run build mode - implements one task per iteration
+# Run build mode
 ./loop.sh build 10
 ```
 
-#### PowerShell (Windows)
-
-```powershell
-# Run planning mode - analyzes specs, generates tasks
-.\loop.ps1 -Mode plan -MaxIterations 3
-
-# Review IMPLEMENTATION_PLAN.md
-
-# Run build mode - implements one task per iteration
-.\loop.ps1 -Mode build -MaxIterations 10
-```
-
-**Note:** If you get an execution policy error, run:
+**Note:** On Windows, if you get an execution policy error run:
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
 
 ### Loop Arguments
 
+#### PowerShell
+```powershell
+.\loop.ps1 [plan|build] [max_iterations]
+
+# Examples (positional):
+.\loop.ps1 plan 5     # Planning mode, max 5 iterations
+.\loop.ps1 build 20   # Build mode, max 20 iterations
+
+# Examples (named):
+.\loop.ps1 -Mode plan -MaxIterations 5
+.\loop.ps1 -Mode build -MaxIterations 20
+```
+
 #### Bash
 ```bash
 ./loop.sh [mode] [max_iterations]
 
-# Examples:
 ./loop.sh plan      # Planning mode, unlimited iterations
 ./loop.sh plan 5    # Planning mode, max 5 iterations
 ./loop.sh build     # Build mode, unlimited iterations
 ./loop.sh build 20  # Build mode, max 20 iterations
 ```
 
-#### PowerShell
-```powershell
-.\loop.ps1 [-Mode plan|build] [-MaxIterations N]
-
-# Examples:
-.\loop.ps1                              # Build mode, unlimited
-.\loop.ps1 -Mode plan                   # Planning mode, unlimited
-.\loop.ps1 -Mode plan -MaxIterations 5  # Planning mode, max 5
-.\loop.ps1 -Mode build -MaxIterations 20
-```
-
 ## Project Structure After Setup
 
 ```
 your-project/
+├── loop.ps1                   # PowerShell 7 loop (Windows)
 ├── loop.sh                    # Bash loop (macOS/Linux/WSL)
-├── loop.ps1                   # PowerShell loop (Windows)
 ├── PROMPT_plan.md             # Planning mode prompt
-├── PROMPT_build.md            # Build mode prompt
-├── AGENTS.md                  # Build/test commands (~60 lines)
+├── PROMPT_build.md            # Build mode prompt (includes visual check)
+├── AGENTS.md                  # Build/test/visual commands (~60 lines)
 ├── IMPLEMENTATION_PLAN.md     # Task list (updated each iteration)
 ├── specs/                     # JTBD specifications
 │   ├── feature-a.md
 │   └── feature-b.md
+├── .gitignore                 # Created if absent
+├── .gitattributes             # Created if absent (LF line endings)
 └── src/                       # Your existing code
 ```
 
@@ -129,11 +131,11 @@ your-project/
 ### Phase 1: Requirements (Human + Claude)
 Run `/cb-ralph-wiggum` to define what you want to build. The interview creates spec files in `specs/`.
 
-### Phase 2: Planning (`./loop.sh plan` or `.\loop.ps1 -Mode plan`)
+### Phase 2: Planning (`.\loop.ps1 plan` / `./loop.sh plan`)
 Claude reads specs, analyzes the codebase, and generates a prioritized task list in `IMPLEMENTATION_PLAN.md`.
 
-### Phase 3: Building (`./loop.sh build` or `.\loop.ps1 -Mode build`)
-Claude picks the top task, implements it, runs tests, commits, and exits. Loop restarts with fresh context for the next task.
+### Phase 3: Building (`.\loop.ps1 build` / `./loop.sh build`)
+Claude picks the top task, implements it, runs tests, **runs Playwright visual checks if configured**, commits, and exits. Loop restarts with fresh context for the next task.
 
 ## Safety Notes
 
@@ -147,9 +149,11 @@ Claude picks the top task, implements it, runs tests, commits, and exits. Loop r
 
 If Ralph goes in circles or the plan becomes stale:
 
+```powershell
+.\loop.ps1 plan 1   # PowerShell
+```
 ```bash
-./loop.sh plan 1        # Bash
-.\loop.ps1 -Mode plan -MaxIterations 1  # PowerShell
+./loop.sh plan 1    # Bash
 ```
 
 This runs one planning iteration to refresh the task list.
@@ -158,8 +162,8 @@ This runs one planning iteration to refresh the task list.
 
 The `templates/` directory contains standalone versions of each file that Ralph generates. Use these as reference or copy them manually:
 
+- `loop.ps1` - PowerShell 7 version
 - `loop.sh` - Bash version
-- `loop.ps1` - PowerShell version
 - `PROMPT_plan.md` - Planning mode prompt
 - `PROMPT_build.md` - Build mode prompt
 - `AGENTS.md` - Operational guide template

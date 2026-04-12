@@ -1,7 +1,7 @@
 ---
 name: cb-ralph-wiggum
 author: ChrisBrooksbank
-description: Scaffold Ralph Wiggum autonomous AI development - JTBD specs, prompts, and loop scripts for fresh-context iterations
+description: Scaffold Ralph Wiggum autonomous AI development - JTBD specs, prompts, bash (loop.sh) and PowerShell 7 (loop.ps1) loops for fresh-context iterations with optional visual verification
 ---
 
 # Ralph Wiggum Setup
@@ -135,36 +135,43 @@ echo "Ralph loop finished after $ITERATION iterations."
 
 After creating, make executable: `chmod +x loop.sh`
 
-### 2. loop.ps1 (PowerShell - Windows)
+### 2. loop.ps1 (PowerShell 7 — preferred on Windows)
 
-Create this file for Windows users:
+Create this file:
 
 ```powershell
-# Ralph Wiggum Loop - Fresh context per iteration (PowerShell version)
-# Usage: .\loop.ps1 [-Mode plan|build] [-MaxIterations N]
+#!/usr/bin/env pwsh
+# Ralph Wiggum Loop - Fresh context per iteration (PowerShell 7)
+# Usage: .\loop.ps1 [plan|build] [max_iterations]
 #
 # Examples:
-#   .\loop.ps1                       # Build mode, unlimited iterations
-#   .\loop.ps1 -Mode plan            # Planning mode, unlimited iterations
-#   .\loop.ps1 -Mode plan -MaxIterations 5
-#   .\loop.ps1 -Mode build -MaxIterations 20
+#   .\loop.ps1 plan      # Planning mode, unlimited
+#   .\loop.ps1 plan 5    # Planning mode, max 5 iterations
+#   .\loop.ps1 build     # Build mode, unlimited
+#   .\loop.ps1 build 20  # Build mode, max 20 iterations
 
 param(
-    [ValidateSet("plan", "build")]
     [string]$Mode = "build",
-
-    [int]$MaxIterations = 0  # 0 means unlimited
+    [int]$MaxIterations = 0
 )
 
 $ErrorActionPreference = "Stop"
 
-# Select prompt file
-$PromptFile = if ($Mode -eq "plan") { "PROMPT_plan.md" } else { "PROMPT_build.md" }
+switch ($Mode) {
+    "plan"  { $PromptFile = "PROMPT_plan.md" }
+    "build" { $PromptFile = "PROMPT_build.md" }
+    default {
+        Write-Error "Usage: .\loop.ps1 [plan|build] [max_iterations]"
+        exit 1
+    }
+}
 
 if (-not (Test-Path $PromptFile)) {
     Write-Error "Error: $PromptFile not found"
     exit 1
 }
+
+$Iteration = 0
 
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "Ralph Wiggum Loop" -ForegroundColor Cyan
@@ -220,7 +227,7 @@ Co-Authored-By: Claude <noreply@anthropic.com>
         Write-Host "No changes to commit." -ForegroundColor Yellow
     }
 
-    Write-Host "Iteration $Iteration complete."
+    Write-Host "Iteration $Iteration complete." -ForegroundColor Green
     Start-Sleep -Seconds 2
 }
 
@@ -331,6 +338,19 @@ If validation fails:
 - Run validation again
 - Repeat until passing
 
+## 2b. Visual Verification (UI tasks only)
+
+If this task involved any UI changes, check AGENTS.md for a visual test command (e.g. `npm run test:visual` or `npx playwright test`).
+
+If a visual test command exists:
+1. Start the dev server if needed (background process)
+2. Run the visual test command
+3. Review any screenshot diffs or failures
+4. Fix visual regressions before continuing
+5. Stop the dev server
+
+If no visual test command exists, skip this step — but note in AGENTS.md if you observe obvious visual issues (missing styles, broken layout, wrong colours).
+
 ## 3. Update Plan and Exit
 
 After validation passes:
@@ -344,6 +364,7 @@ The loop will restart with fresh context for the next task.
 ## 99999. GUARDRAILS - READ CAREFULLY
 
 - **DON'T skip validation** - always run tests/lint before finishing
+- **DON'T skip visual verification** for UI tasks - broken layouts are silent failures
 - **DON'T implement multiple tasks** - one task per iteration
 - **DON'T modify unrelated code** - stay focused on the current task
 - **DO follow existing code patterns** - consistency matters
@@ -444,6 +465,51 @@ Create one markdown file per JTBD topic. Template:
 - [What this spec does NOT cover]
 ```
 
+### 7. .gitignore (if none exists)
+
+Only create if the project has no `.gitignore`. Template:
+
+```
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/settings.json
+.idea/
+
+# Node
+node_modules/
+dist/
+.next/
+out/
+
+# Env / secrets
+.env
+.env.local
+.env*.local
+
+# Test output
+playwright-report/
+test-results/
+coverage/
+```
+
+### 8. .gitattributes (if none exists)
+
+Only create if the project has no `.gitattributes`. Prevents line-ending issues across platforms:
+
+```
+* text=auto eol=lf
+*.sh text eol=lf
+*.ps1 text eol=lf
+*.md text eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+```
+
 ---
 
 ## Post-Setup Instructions
@@ -452,16 +518,26 @@ After generating all files, provide these instructions to the user:
 
 ### Quick Start (Bash - macOS/Linux/WSL/Git Bash)
 
-```bash
-# Make loop executable
-chmod +x loop.sh
-
+**PowerShell 7 (Windows — recommended):**
+```powershell
 # Run planning mode (generates tasks from specs)
-./loop.sh plan 3
+.\loop.ps1 plan 3
 
 # Review the generated IMPLEMENTATION_PLAN.md
 
 # Run build mode (implements tasks one by one)
+.\loop.ps1 build 10
+```
+
+**Bash (macOS/Linux/WSL):**
+```bash
+# Make loop executable (first time only)
+chmod +x loop.sh
+
+# Run planning mode
+./loop.sh plan 3
+
+# Run build mode
 ./loop.sh build 10
 ```
 
@@ -487,6 +563,10 @@ chmod +x loop.sh
 ### Regenerating the Plan
 
 If the plan becomes stale or Ralph goes in circles:
+```powershell
+# PowerShell
+.\loop.ps1 plan 1
+```
 ```bash
 ./loop.sh plan 1                              # Bash
 .\loop.ps1 -Mode plan -MaxIterations 1        # PowerShell

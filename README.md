@@ -1,6 +1,8 @@
 # cb-ralph-wiggum
 
-A Claude Code slash command that scaffolds Geoffrey Huntley's **Ralph Wiggum** methodology - an autonomous AI development loop using fresh context per iteration.
+An adaptation of [Geoffrey Huntley’s](https://ghuntley.com/) **Ralph Wiggum** methodology for Claude Code—an autonomous AI development loop using fresh context per iteration.
+
+> **Credit:** Ralph Wiggum was created and popularised by Geoffrey Huntley. This repository adapts his technique into a reusable Claude Code slash command with PowerShell and Bash loop tooling.
 
 ## What is Ralph Wiggum?
 
@@ -171,7 +173,7 @@ The `templates/` directory contains standalone versions of each file that Ralph 
 
 ## Attribution
 
-Based on Geoffrey Huntley's Ralph Wiggum technique:
+Ralph Wiggum is Geoffrey Huntley’s original technique. This repository is an independent adaptation of his work for Claude Code.
 
 - [Ralph Wiggum as "Software Engineer"](https://ghuntley.com/ralph/) - Original article
 - [How to Ralph Wiggum](https://github.com/ghuntley/how-to-ralph-wiggum) - Official playbook

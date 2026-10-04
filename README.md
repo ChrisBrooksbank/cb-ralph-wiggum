@@ -1,185 +1,211 @@
-# cb-ralph-wiggum
+<p align="center">
+  <img src="assets/banner.svg" alt="Ralph Wiggum: autonomous AI coding loops for Claude Code" width="100%">
+</p>
 
-An adaptation of [Geoffrey Huntley’s](https://ghuntley.com/) **Ralph Wiggum** methodology for Claude Code—an autonomous AI development loop using fresh context per iteration.
+<p align="center">
+  <a href="https://docs.claude.com/en/docs/claude-code"><img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-slash_command-D97757?style=for-the-badge&logo=anthropic&logoColor=white"></a>
+  <img alt="Bash" src="https://img.shields.io/badge/Bash-loop.sh-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white">
+  <img alt="PowerShell 7" src="https://img.shields.io/badge/PowerShell_7-loop.ps1-5391FE?style=for-the-badge&logo=powershell&logoColor=white">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-facc15?style=for-the-badge"></a>
+</p>
 
-> **Credit:** Ralph Wiggum was created and popularised by Geoffrey Huntley. This repository adapts his technique into a reusable Claude Code slash command with PowerShell and Bash loop tooling.
+<p align="center">
+  <b>Describe what you want built. Go and make a coffee. Come back to tested, committed code.</b><br>
+  <sub>One slash command that sets up <a href="https://ghuntley.com/ralph/">Geoffrey Huntley's</a> <i>Ralph Wiggum</i> technique in any project.</sub>
+</p>
 
-## What is Ralph Wiggum?
+---
 
-Ralph Wiggum is a loop technique that feeds prompts to Claude repeatedly, with each iteration getting **fresh context**. Progress is stored in files and git history, not in the LLM context window. Loops are provided for both **PowerShell 7** (`loop.ps1`) and **Bash** (`loop.sh`).
+## See it in action
 
-**Key principles:**
-- **Fresh context each iteration** - Unlike plugins that accumulate context, true Ralph spawns new Claude sessions
-- **Progress in files/git** - Not in LLM memory
-- **Backpressure via tests/lints** - Bad outputs get rejected automatically
-- **JTBD-driven specs** - Define what to build in specification files
-- **Two modes** - Planning (gap analysis) and Building (implementation)
+<p align="center">
+  <img src="assets/demo/demo.gif" alt="Terminal demo: /cb-ralph-wiggum scaffolds a project, the plan loop writes a task list, then the build loop completes three tasks with fresh context each time, recovering from a failing test." width="100%">
+</p>
 
-**Economics:** ~$10/hour autonomous coding at Sonnet pricing.
+<p align="center"><sub>A scripted, sped-up replay of a typical session (a real build iteration takes minutes, not seconds).<br>Source: <a href="assets/demo/make_demo.py"><code>assets/demo/make_demo.py</code></a> → asciinema cast → GIF.</sub></p>
 
-## Installation
+---
 
-Copy the slash command to your Claude Code commands directory:
+## The idea in 30 seconds
 
-```bash
-# macOS/Linux
-cp commands/cb-ralph-wiggum.md ~/.claude/commands/
+Long AI coding sessions get worse the longer they run. The context window fills with old attempts, dead ends and stale assumptions, and the model starts to drift.
 
-# Windows (PowerShell)
-copy commands\cb-ralph-wiggum.md $env:USERPROFILE\.claude\commands\
+**Ralph does the opposite. Every iteration is a brand-new Claude session that remembers nothing.** It reads the plan, does **one** task, proves it works with your tests, commits, and exits. Then the loop starts it again with a clean slate.
 
-# Windows (CMD)
-copy commands\cb-ralph-wiggum.md %USERPROFILE%\.claude\commands\
+The memory lives in **files and git**, not in the model:
+
+| Stored in | What it holds |
+| --- | --- |
+| `specs/*.md` | **What** to build: Jobs-To-Be-Done specs from a short interview |
+| `IMPLEMENTATION_PLAN.md` | **What's next**: a prioritised checklist every iteration reads and updates |
+| `AGENTS.md` | **How** to build, test and lint *this* project |
+| `git log` | **What's done**: one reviewable commit per iteration |
+
+```mermaid
+flowchart LR
+    You(["🧑 You"]) -->|"/cb-ralph-wiggum"| Specs["📄 specs/*.md<br/>JTBD specs"]
+    Specs --> Plan
+
+    subgraph Plan["🗺️ Plan loop · ./loop.sh plan"]
+        direction TB
+        P1["Read specs + code"] --> P2["Gap analysis"] --> P3["Write prioritised<br/>IMPLEMENTATION_PLAN.md"]
+    end
+
+    Plan --> Build
+
+    subgraph Build["🔨 Build loop · ./loop.sh build"]
+        direction TB
+        B0(["✨ Fresh Claude session<br/>no memory of previous runs"]) --> B1["Pick the top unchecked task"]
+        B1 --> B2["Implement it"]
+        B2 --> B3{"Tests & lint<br/>pass?"}
+        B3 -->|"no: backpressure"| B2
+        B3 -->|yes| B4["Tick the task off<br/>and exit"]
+        B4 --> B5["Loop commits to git"]
+        B5 -->|next iteration| B0
+    end
+
+    Build --> Done(["✅ Tested, committed code<br/>you can review commit by commit"])
 ```
 
-## Usage
+### Why it works
 
-In any project, run:
+- 🧠 **Fresh context every iteration.** No context rot and no slow drift. Iteration 50 is as sharp as iteration 1.
+- 🧱 **Backpressure from your own tests.** A task isn't done until `npm test` (or whatever your project uses) passes, so bad output gets rejected automatically.
+- 🎯 **One task per run.** Small, focused changes that are easy to review and easy to revert.
+- 📜 **Everything is a commit.** Every iteration lands as its own git commit, so you can audit, bisect or roll back.
+- 💸 **Cheap.** Around **$10/hour** of autonomous coding at Sonnet pricing (about $0.15–0.30 per iteration).
+- 🪟🐧🍎 **Cross-platform.** PowerShell 7 for Windows, Bash for macOS, Linux, WSL and Git Bash.
+
+---
+
+## 🍩 The Geoffrey Huntley connection
+
+**Ralph Wiggum is [Geoffrey Huntley's](https://ghuntley.com/) technique, not mine.** He came up with it, named it and made it popular. In its purest form it is a single line of Bash:
+
+```bash
+while :; do cat PROMPT.md | claude ; done
+```
+
+It's named after the Simpsons character: not the smartest kid in the room, but relentlessly persistent. Put a naive agent in a dumb loop, give it good specs and hard feedback from tests, and it gets a surprising amount of real software built.
+
+**What this repo adds** is packaging. It turns the playbook into a single Claude Code command, so you can drop Ralph into any project in a couple of minutes:
+
+- a guided **JTBD interview** that writes your `specs/`
+- separate **plan** and **build** prompts based on Huntley's playbook
+- loop scripts for **Bash _and_ PowerShell 7** with iteration limits and auto-commits
+- an `AGENTS.md` pre-filled from your project's existing `CLAUDE.md`
+- an optional **Playwright visual-verification** step in build mode
+
+Read the original first: **[Ralph Wiggum as a "software engineer"](https://ghuntley.com/ralph/)** · **[how-to-ralph-wiggum playbook](https://github.com/ghuntley/how-to-ralph-wiggum)**
+
+---
+
+## 🚀 Quick start
+
+**1. Install the slash command** (one time):
+
+```bash
+# macOS / Linux
+cp commands/cb-ralph-wiggum.md ~/.claude/commands/
+```
+```powershell
+# Windows (PowerShell)
+copy commands\cb-ralph-wiggum.md $env:USERPROFILE\.claude\commands\
+```
+
+**2. Scaffold Ralph** in any project. Open Claude Code and run:
 
 ```
 /cb-ralph-wiggum
 ```
 
-This will:
-1. Interview you about what you want to build (Jobs To Be Done)
-2. Detect existing project configuration (CLAUDE.md)
-3. Generate all Ralph Wiggum files:
-   - `loop.ps1` - PowerShell 7 loop orchestrator (Windows)
-   - `loop.sh` - Bash loop orchestrator (macOS/Linux/WSL)
-   - `PROMPT_plan.md` - Planning mode instructions
-   - `PROMPT_build.md` - Build mode instructions (includes visual verification step)
-   - `AGENTS.md` - Operational guide
-   - `IMPLEMENTATION_PLAN.md` - Task list
-   - `specs/*.md` - JTBD specifications
-   - `.gitignore` / `.gitattributes` - if not already present
+Claude interviews you (goal, 2–5 jobs-to-be-done, definition of done), reads your `CLAUDE.md` for build and test commands, and generates everything.
 
-### Running the Loop
+**3. Plan, review, build:**
 
-#### PowerShell 7 (Windows — recommended)
-
+```bash
+./loop.sh plan 3      # gap analysis → IMPLEMENTATION_PLAN.md
+# ✋ review the plan and edit it if you like. It's just Markdown.
+./loop.sh build 10    # up to 10 iterations, one task each
+```
 ```powershell
-# Run planning mode - analyzes specs, generates tasks
 .\loop.ps1 plan 3
-
-# Review IMPLEMENTATION_PLAN.md
-
-# Run build mode - implements one task per iteration
 .\loop.ps1 build 10
 ```
 
-#### Bash (macOS/Linux/WSL/Git Bash)
+> [!TIP]
+> If Ralph starts going in circles, or the plan no longer matches reality, run a single planning pass (`./loop.sh plan 1`) to regenerate the task list. Plans are disposable.
 
-```bash
-# Make executable (first time only)
-chmod +x loop.sh
+---
 
-# Run planning mode
-./loop.sh plan 3
-
-# Run build mode
-./loop.sh build 10
-```
-
-**Note:** On Windows, if you get an execution policy error run:
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-### Loop Arguments
-
-#### PowerShell
-```powershell
-.\loop.ps1 [plan|build] [max_iterations]
-
-# Examples (positional):
-.\loop.ps1 plan 5     # Planning mode, max 5 iterations
-.\loop.ps1 build 20   # Build mode, max 20 iterations
-
-# Examples (named):
-.\loop.ps1 -Mode plan -MaxIterations 5
-.\loop.ps1 -Mode build -MaxIterations 20
-```
-
-#### Bash
-```bash
-./loop.sh [mode] [max_iterations]
-
-./loop.sh plan      # Planning mode, unlimited iterations
-./loop.sh plan 5    # Planning mode, max 5 iterations
-./loop.sh build     # Build mode, unlimited iterations
-./loop.sh build 20  # Build mode, max 20 iterations
-```
-
-## Project Structure After Setup
+## 📁 What gets generated
 
 ```
 your-project/
+├── loop.sh                    # Bash loop (macOS / Linux / WSL / Git Bash)
 ├── loop.ps1                   # PowerShell 7 loop (Windows)
-├── loop.sh                    # Bash loop (macOS/Linux/WSL)
-├── PROMPT_plan.md             # Planning mode prompt
-├── PROMPT_build.md            # Build mode prompt (includes visual check)
-├── AGENTS.md                  # Build/test/visual commands (~60 lines)
-├── IMPLEMENTATION_PLAN.md     # Task list (updated each iteration)
-├── specs/                     # JTBD specifications
+├── PROMPT_plan.md             # Planning mode: specs vs. code → task list
+├── PROMPT_build.md            # Build mode: one task, validate, exit
+├── AGENTS.md                  # Build / test / lint / visual-check commands
+├── IMPLEMENTATION_PLAN.md     # Shared task list, updated every iteration
+├── specs/                     # One JTBD spec per topic
 │   ├── feature-a.md
 │   └── feature-b.md
 ├── .gitignore                 # Created if absent
-├── .gitattributes             # Created if absent (LF line endings)
-└── src/                       # Your existing code
+└── .gitattributes             # Created if absent (LF line endings)
 ```
 
-## The Three Phases
+Standalone copies of every generated file are in [`templates/`](templates/), with an example spec in [`examples/specs/`](examples/specs/).
 
-### Phase 1: Requirements (Human + Claude)
-Run `/cb-ralph-wiggum` to define what you want to build. The interview creates spec files in `specs/`.
+<details>
+<summary><b>Loop arguments</b></summary>
 
-### Phase 2: Planning (`.\loop.ps1 plan` / `./loop.sh plan`)
-Claude reads specs, analyzes the codebase, and generates a prioritized task list in `IMPLEMENTATION_PLAN.md`.
+```bash
+./loop.sh [plan|build] [max_iterations]
 
-### Phase 3: Building (`.\loop.ps1 build` / `./loop.sh build`)
-Claude picks the top task, implements it, runs tests, **runs Playwright visual checks if configured**, commits, and exits. Loop restarts with fresh context for the next task.
-
-## Safety Notes
-
-- **`--dangerously-skip-permissions`** bypasses Claude's permission prompts for full automation
-- **Always set iteration limits** to control costs
-- **Run in sandboxed environments** for untrusted projects
-- **Review commits** - each iteration auto-commits changes
-- **Cost estimate:** ~$0.15-0.30 per iteration with Sonnet
-
-## Regenerating Plans
-
-If Ralph goes in circles or the plan becomes stale:
+./loop.sh plan        # planning, unlimited iterations
+./loop.sh plan 5      # planning, max 5 iterations
+./loop.sh build       # building, unlimited iterations
+./loop.sh build 20    # building, max 20 iterations
+```
 
 ```powershell
-.\loop.ps1 plan 1   # PowerShell
+.\loop.ps1 [plan|build] [max_iterations]
+
+.\loop.ps1 plan 5
+.\loop.ps1 -Mode build -MaxIterations 20   # named parameters work too
 ```
-```bash
-./loop.sh plan 1    # Bash
+
+If PowerShell refuses to run the script because of the execution policy:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
+</details>
 
-This runs one planning iteration to refresh the task list.
+---
 
-## Templates
+## ⚠️ Safety
 
-The `templates/` directory contains standalone versions of each file that Ralph generates. Use these as reference or copy them manually:
+Ralph runs Claude **unattended** with `--dangerously-skip-permissions`. Treat it like a junior engineer with root access.
 
-- `loop.ps1` - PowerShell 7 version
-- `loop.sh` - Bash version
-- `PROMPT_plan.md` - Planning mode prompt
-- `PROMPT_build.md` - Build mode prompt
-- `AGENTS.md` - Operational guide template
-- `IMPLEMENTATION_PLAN.md` - Task list template
+- **Always set an iteration limit.** It caps both cost and blast radius.
+- **Run it in a sandbox** (container, VM or a disposable clone) for anything you don't fully trust.
+- **Review the commits.** Every iteration auto-commits, so `git log -p` is your audit trail.
+- **Good tests matter.** Backpressure is only as strong as your test suite.
 
-## Attribution
+---
 
-Ralph Wiggum is Geoffrey Huntley’s original technique. This repository is an independent adaptation of his work for Claude Code.
+## 📚 Learn more
 
-- [Ralph Wiggum as "Software Engineer"](https://ghuntley.com/ralph/) - Original article
-- [How to Ralph Wiggum](https://github.com/ghuntley/how-to-ralph-wiggum) - Official playbook
-- [The Ralph Wiggum Playbook](https://paddo.dev/blog/ralph-wiggum-playbook/) - Comprehensive guide
-- [Awesome Ralph](https://github.com/snwfdhmp/awesome-ralph) - Curated resources
+- 📝 [Ralph Wiggum as a "software engineer"](https://ghuntley.com/ralph/): Geoffrey Huntley's original article
+- 📖 [how-to-ralph-wiggum](https://github.com/ghuntley/how-to-ralph-wiggum): the official playbook
+- 🧭 [The Ralph Wiggum Playbook](https://paddo.dev/blog/ralph-wiggum-playbook/): a detailed walkthrough
+- ⭐ [Awesome Ralph](https://github.com/snwfdhmp/awesome-ralph): curated resources
 
-## License
+---
 
-MIT
+<p align="center">
+  <sub>MIT licensed · Built by <a href="https://github.com/ChrisBrooksbank">Chris Brooksbank</a> · Ralph Wiggum technique by <a href="https://ghuntley.com/">Geoffrey Huntley</a></sub><br>
+  <sub>If this saves you some typing, a ⭐ is appreciated.</sub>
+</p>

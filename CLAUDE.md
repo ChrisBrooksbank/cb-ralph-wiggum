@@ -9,6 +9,7 @@ A Claude Code slash command skill (`/cb-ralph-wiggum`) that scaffolds the Ralph 
 This is a Claude Code skill repository, not a runnable application.
 
 - `commands/cb-ralph-wiggum.md` — The slash command prompt that Claude Code executes
+- `assets/` — README banner and demo GIF. Regenerate the GIF with `assets/demo/make_demo.py` + asciinema's `agg` (see the script's docstring)
 
 ## What the Skill Generates
 

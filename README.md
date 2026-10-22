@@ -24,6 +24,14 @@
 
 <p align="center"><sub>A scripted, sped-up replay of a typical session (a real build iteration takes minutes, not seconds).<br>Source: <a href="assets/demo/make_demo.py"><code>assets/demo/make_demo.py</code></a> → asciinema cast → GIF.</sub></p>
 
+### Same loop, different job: a Lords business paper
+
+<p align="center">
+  <img src="assets/demo/demo-lords.gif" alt="Terminal demo: Ralph builds a CLI that turns a House of Lords business paper PDF into a plain-English briefing, recovering from a failing test when a wrapped question loses its member." width="100%">
+</p>
+
+<p align="center"><sub>Ralph turns a dense PDF into a briefing in three reviewable commits. The input is the real <a href="assets/demo/lords-business-2025-01-15.pdf">Lords Business paper for 15 January 2025</a> (Parliamentary copyright, <a href="https://www.parliament.uk/site-information/copyright-parliament/open-parliament-licence/">Open Parliament Licence</a>).<br>Source: <a href="assets/demo/make_demo_lords.py"><code>assets/demo/make_demo_lords.py</code></a> → asciinema cast → GIF.</sub></p>
+
 ---
 
 ## The idea in 30 seconds
